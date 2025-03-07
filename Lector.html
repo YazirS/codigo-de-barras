@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escanear Código de Barras</title>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.0"></script> <!-- Librería Zxing-js -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 50px;
+        }
+        #video {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border: 1px solid #ddd;
+        }
+        input {
+            margin-top: 20px;
+            padding: 10px;
+            width: 80%;
+            max-width: 400px;
+            font-size: 16px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h2>Escanear Código de Barras con la Cámara</h2>
+
+    <!-- Video para mostrar lo que captura la cámara -->
+    <video id="video" width="100%" height="auto"></video>
+
+    <!-- Campo de texto para mostrar el código de barras escaneado (opcional) -->
+    <input type="text" id="barcodeInput" placeholder="Código de barras escaneado" readonly>
+
+    <!-- Botón para enviar manualmente el código de barras al formulario -->
+    <button onclick="sendBarcodeToForm(document.getElementById('barcodeInput').value)">Enviar Código</button>
+
+    <p>Escanea un código de barras con la cámara del celular.</p>
+
+    <script>
+        let codeReader;
+
+        function startScanner() {
+            codeReader = new ZXing.BrowserBarcodeReader();
+            
+            // Acceder al dispositivo de cámara del móvil
+            codeReader.decodeFromInputVideoDevice(null, 'video').then(result => {
+                console.log(result);
+                document.getElementById("barcodeInput").value = result.text; // Mostrar el código de barras escaneado
+                sendBarcodeToForm(result.text); // Enviar el código de barras a Google Forms
+            }).catch(err => console.error("Error al escanear código de barras: ", err));
+        }
+
+        function sendBarcodeToForm(barcode) {
+            if (!barcode) {
+                alert("No se detectó un código de barras.");
+                return;
+            }
+
+            const formURL = "https://docs.google.com/forms/d/e/1FAIpQLSeKtuTHVySLQalrpnBImI2xifR1TnEPkLW4mOjgTRXyWKmIQg/formResponse";
+            
+            // Datos para enviar al formulario (reemplaza con los entry IDs correctos)
+            const formData = {
+                "entry.1234567890": barcode, // Reemplaza con el ID de tu campo para el código de barras
+            };
+
+            let queryString = "";
+            for (const key in formData) {
+                queryString += `${key}=${encodeURIComponent(formData[key])}&`;
+            }
+            queryString = queryString.slice(0, -1);  // Eliminar el último '&'
+
+            fetch(formURL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: queryString
+            }).then(response => {
+                if (response.ok) {
+                    alert("Código de barras enviado con éxito.");
+                    document.getElementById("barcodeInput").value = "";  // Limpiar el campo
+                } else {
+                    alert("Hubo un error al enviar el código.");
+                }
+            }).catch(error => {
+                console.error("Error al enviar los datos:", error);
+            });
+        }
+
+        window.onload = function() {
+            startScanner(); // Inicia el escáner al cargar la página
+        };
+    </script>
+</body>
+</html>
